@@ -8,3 +8,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "Fact Search"
 include ':app'
+include ':courier'

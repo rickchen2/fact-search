@@ -1,51 +1,50 @@
 package com.blankmemo.factsearch.di
 
-import com.blankmemo.factsearch.data.remote.DogService
-import com.blankmemo.factsearch.utils.Constants.Companion.BASE_URL
+import com.blankmemo.courier.coroutines.CoroutinesResponseCallAdapterFactory
+import com.blankmemo.factsearch.network.HttpRequestInterceptor
+import com.blankmemo.factsearch.network.FactSearchClient
+import com.blankmemo.factsearch.network.FactSearchService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import java.util.concurrent.TimeUnit
+import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    @Singleton
+
     @Provides
-    fun provideHttpClient(): OkHttpClient {
-        return OkHttpClient
-            .Builder()
-            .readTimeout(15, TimeUnit.SECONDS)
-            .connectTimeout(15, TimeUnit.SECONDS)
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(HttpRequestInterceptor())
             .build()
     }
 
-    @Singleton
     @Provides
-    fun provideConverterFactory(): GsonConverterFactory =
-         GsonConverterFactory.create()
-
     @Singleton
-    @Provides
-    fun provideRetrofit(
-        okHttpClient: OkHttpClient,
-        gsonConverterFactory: GsonConverterFactory
-    ): Retrofit {
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
             .client(okHttpClient)
-            .addConverterFactory(gsonConverterFactory)
+            .baseUrl("https://pokeapi.co/api/v2/")
+            .addConverterFactory(MoshiConverterFactory.create())
+            .addCallAdapterFactory(CoroutinesResponseCallAdapterFactory.create())
             .build()
     }
 
-    @Singleton
     @Provides
-    fun provideCurrencyService(retrofit: Retrofit): DogService =
-        retrofit.create(DogService::class.java)
+    @Singleton
+    fun providePokedexService(retrofit: Retrofit): FactSearchService {
+        return retrofit.create(FactSearchService::class.java)
+    }
 
+    @Provides
+    @Singleton
+    fun providePokedexClient(factSearchService: FactSearchService): FactSearchClient {
+        return FactSearchClient(factSearchService)
+    }
 }
